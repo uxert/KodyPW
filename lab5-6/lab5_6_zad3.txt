@@ -1,0 +1,321 @@
+package zadanie3;
+
+import java.util.concurrent.Semaphore;
+
+
+public class Czytelnik extends Thread{
+
+    Semaphore czyt;
+    Semaphore pis;
+    Semaphore chron;
+    int nr_czytelnika;
+    int liczba_powtorzen;
+    int K;
+    int[] liczby;
+    public Czytelnik(int nr, Semaphore[] sems, int liczba_powtorzen, int[] liczby, int k)
+    {
+        nr_czytelnika = nr;
+        czyt = sems[0];
+        pis = sems[1];
+        chron = sems[2];
+        this.liczba_powtorzen = liczba_powtorzen;
+        this.liczby = liczby;
+        this.K = k;
+    }
+
+    void sprawyWlasne() {
+        try {
+            Thread.sleep((long) (5 + Math.random() * 10));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void czytanie()
+    {
+        try {
+            Thread.sleep((long) (1 + Math.random() * 4));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void dzialanieCzytelnika() throws InterruptedException {
+        for (int count = 0; count < liczba_powtorzen; count++)
+        {
+
+            //wlanse sprawy
+
+            chron.acquire();
+            System.out.printf(">>> [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+            if (((liczby[2] + liczby[3]) == 0) && (liczby[1] + liczby[3] < K)) // trzeba sprawdzic nie tylko czy nie ma pisarzy
+                //lecz tutaj trzeba sprawdzic takze czy w czytelni w ogole jest jeszcze miejsce
+            {
+                liczby[1] ++;
+                czyt.release();
+            }
+            else
+            {
+                liczby[0]++;
+            }
+            System.out.printf("<<< [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+
+            chron.release();
+
+            czyt.acquire();
+            //czytanie
+            System.out.printf("==> [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+            czytanie();
+            System.out.printf("<== [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+
+            chron.acquire();
+            System.out.printf(">>> [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+
+            liczby[1]--;
+            if (liczby[1] == 0)
+            {
+                if (liczby[2] > 0)
+                {
+                    liczby[3] = 1;
+                    liczby[2]--;
+                    pis.release();
+                }
+            }
+
+            //trzeba dac czytelnikowi po skonczeniu mozliwosc wpuszczenia kolejnego czytelnika jesli czytelnia jest pusta
+            // i w kolejce zostali sami czytelnicy, juz zadnego pisarza
+            //w przeciwnym przypadku przy ograniczonych rozmiarach czytelni (gdy czytelnicy sie nie mieszcza na raz)
+            //zadanie moze sie nie skonczyc, bo czytelnikow z poczekalni nikt nie bedzie mogl wpuscic gdy
+            //wszyscy pisarze juz sie zakoncza i zadnego czytelnika w czytelni nie bedzie
+            if ((liczby[1] + liczby[3] == 0) && liczby[0] > 0 && liczby[2] == 0 && liczby[4] == 1)
+            {
+                liczby[1]++;
+                liczby[0]--;
+                czyt.release();
+            }
+
+            System.out.printf("<<< [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+
+            chron.release();
+        }
+
+    }
+    public void run() {
+        try {
+            dzialanieCzytelnika();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package zadanie3;
+
+import java.util.concurrent.Semaphore;
+
+public class Pisarz extends Thread{
+
+    int nr_pisarza;
+    Semaphore czyt;
+    Semaphore pis;
+    Semaphore chron;
+    int liczba_powtorzen;
+    int[] liczby;
+    int pojemnoscCzytelni;
+    public Pisarz(int nr, Semaphore[] sems, int liczba_powtorzen, int[] liczby, int K)
+    {
+        czyt = sems[0];
+        pis = sems[1];
+        chron = sems[2];
+        nr_pisarza = nr;
+        this.liczba_powtorzen = liczba_powtorzen;
+        this.liczby = liczby;
+        this.pojemnoscCzytelni = K;
+    }
+
+    void sprawyWlasne()
+    {
+        try {
+            Thread.sleep((long) (5 + Math.random() * 10));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    void pisanie()
+    {
+        try {
+            Thread.sleep((long) (1 + Math.random() * 4));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void dzialaniePisarza() throws InterruptedException {
+        for (int count = 0; count < liczba_powtorzen; count++)
+        {
+            chron.acquire();
+            System.out.printf(">>> [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+
+            if (liczby[1] + liczby[3] == 0)
+            {
+                liczby[3] = 1;
+                pis.release();
+            }
+            else
+            {
+                liczby[2]++;
+            }
+
+            System.out.printf("<<< [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+            chron.release();
+
+            pis.acquire();
+            System.out.printf("==> [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+            pisanie();
+            System.out.printf("<== [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+
+            chron.acquire();
+            System.out.printf(">>> [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+
+            liczby[3] = 0;
+            if (liczby[0] > 0)
+            {
+                while (liczby[0] >0 && liczby[1] < pojemnoscCzytelni) // trzeba dodac sprawdzenie, czy nie wpuszczono juz za duzo Czytelnikow
+                {
+                    liczby[1]++;
+                    liczby[0]--;
+                    czyt.release();
+                }
+            }
+            else if (liczby[2] > 0)
+            {
+                liczby[3] = 1;
+                liczby[2]--;
+                pis.release();
+            }
+            System.out.printf("<<< [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, liczby[1], liczby[0], liczby[3], liczby[2]);
+
+            if (count == (liczba_powtorzen - 1)) // jezeli to jest ostatnia iteracja pisarza to ustawia flage, ktora
+                //pozwala czytelnikom wpuszczac samych siebie do czytelni po przeczytaniu, bo nie ma juz pisarza, ktory
+                //moze to zrobic - zapobiega to sytuacji blokady czytelnikow na koniec zadania
+            {
+                liczby[4] = 1;
+            }
+
+            chron.release();
+        }
+    }
+    public void run() {
+        try {
+            dzialaniePisarza();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+package zadanie3;
+import java.util.concurrent.Semaphore;
+//klasa uruchomieniowa
+public class test {
+
+    public static void main(String[] args) throws InterruptedException {
+
+        //parametry
+        final int m = 5; // liczba czytelnikow
+        final int n = 2; // liczba pisarzy
+        final int liczba_powtorzen = 100;
+        final int pojemnosc_czytelni = 3;
+        //tablica liczb przechowujaca 5 liczb, w kolejnosci:
+        // cp, cc, pp, pc - oznaczenia z wykladow oraz ostatnia - czy ktorys Pisarz doszedl do konca.
+        //jest to potrzebne aby uporac sie z sytuacja, w ktorej na koniec zadania czytelnicy stoja w kolejce, ale
+        // nie ma kto ich wpuscic bo czytelnia jest pusta a wszyscy pisarze zakonczyli prace
+        int[] liczby = new int[5];
+
+        for (int i = 0; i < 5; i++)
+        {
+            liczby[i] = 0;
+        }
+        //tablica zawierajaca semafory, w kolejnosci, czyt, pis, chron
+        Semaphore[] mySems = new Semaphore[3];
+        mySems[0] = new Semaphore(0); // czyt
+        mySems[1] = new Semaphore(0); // pis
+        mySems[2] = new Semaphore(1); // binarny chron
+
+
+        Czytelnik[] czytelnicy = new Czytelnik[m];
+        Pisarz[] pisarze = new Pisarz[n];
+
+        for (int i = 0; i < m; i++)
+        {
+            czytelnicy[i] = new Czytelnik(i, mySems, liczba_powtorzen, liczby, pojemnosc_czytelni);
+        }
+        for (int i = 0; i < n; i++)
+        {
+            pisarze[i] = new Pisarz(i, mySems, liczba_powtorzen, liczby, pojemnosc_czytelni);
+        }
+
+        for (int i = 0; i < n; i++)
+        {
+            pisarze[i].start();
+        }
+        for (int i = 0; i < m; i++)
+        {
+            czytelnicy[i].start();
+        }
+
+        for (int i =0; i < n; i++)
+        {
+            pisarze[i].join();
+        }
+
+        for (int i = 0; i < m; i++)
+        {
+            czytelnicy[i].join();
+        }
+
+        System.out.println("Koniec uruchomienia, program zakonczony poprawnie");
+    }
+}
+

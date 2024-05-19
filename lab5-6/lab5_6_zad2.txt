@@ -1,0 +1,269 @@
+package zadanie2;
+
+import java.util.concurrent.Semaphore;
+
+
+public class Czytelnik extends Thread{
+
+    Semaphore czyt;
+    Semaphore pis;
+    Semaphore chron;
+    int nr_czytelnika;
+    int liczba_powtorzen;
+
+    int[] l;
+    public Czytelnik(int nr, Semaphore[] sems, int liczba_powtorzen, int[] liczby)
+    {
+        nr_czytelnika = nr;
+        czyt = sems[0];
+        pis = sems[1];
+        chron = sems[2];
+        this.liczba_powtorzen = liczba_powtorzen;
+        this.l = liczby;
+    }
+
+    void sprawyWlasne() {
+        try {
+            Thread.sleep((long) (5 + Math.random() * 10));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void czytanie()
+    {
+        try {
+            Thread.sleep((long) (1 + Math.random() * 4));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void dzialanieCzytelnika() throws InterruptedException {
+        for (int count = 0; count < liczba_powtorzen; count++)
+        {
+
+            //wlanse sprawy
+
+            chron.acquire();
+            System.out.printf(">>> [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, l[1], l[0], l[3], l[2]);
+            if ((l[2] + l[3]) == 0)
+            {
+                l[1] ++;
+                czyt.release();
+            }
+            else
+            {
+                l[0]++;
+            }
+            System.out.printf("<<< [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, l[1], l[0], l[3], l[2]);
+
+            chron.release();
+
+            czyt.acquire();
+            //czytanie
+            System.out.printf("==> [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, l[1], l[0], l[3], l[2]);
+            czytanie();
+            System.out.printf("<== [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, l[1], l[0], l[3], l[2]);
+
+
+            chron.acquire();
+            System.out.printf(">>> [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, l[1], l[0], l[3], l[2]);
+
+            l[1]--;
+            if (l[1] == 0)
+            {
+                if (l[2] > 0)
+                {
+                    l[3] = 1;
+                    l[2]--;
+                    pis.release();
+                }
+            }
+            System.out.printf("<<< [C-%d, %d] :: [%d %d %d %d]\n", nr_czytelnika + 1, count + 1, l[1], l[0], l[3], l[2]);
+
+            chron.release();
+        }
+
+    }
+    public void run() {
+        try {
+            dzialanieCzytelnika();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+package zadanie2;
+
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class Pisarz extends Thread{
+
+    int nr_pisarza;
+    Semaphore czyt;
+    Semaphore pis;
+    Semaphore chron;
+    int liczba_powtorzen;
+    int[] l;
+    public Pisarz(int nr, Semaphore[] sems, int liczba_powtorzen, int[] liczby)
+    {
+        czyt = sems[0];
+        pis = sems[1];
+        chron = sems[2];
+        nr_pisarza = nr;
+        this.liczba_powtorzen = liczba_powtorzen;
+        this.l = liczby;
+    }
+
+    void sprawyWlasne()
+    {
+        try {
+            Thread.sleep((long) (5 + Math.random() * 10));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    void pisanie()
+    {
+        try {
+            Thread.sleep((long) (1 + Math.random() * 4));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void dzialaniePisarza() throws InterruptedException {
+        for (int count = 0; count < liczba_powtorzen; count++)
+        {
+            chron.acquire();
+            System.out.printf(">>> [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, l[1], l[0], l[3], l[2]);
+
+            if (l[1] + l[3] == 0)
+            {
+                l[3] = 1;
+                pis.release();
+            }
+            else
+            {
+                l[2]++;
+            }
+
+            System.out.printf("<<< [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, l[1], l[0], l[3], l[2]);
+            chron.release();
+
+            pis.acquire();
+            System.out.printf("==> [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, l[1], l[0], l[3], l[2]);
+            pisanie();
+            System.out.printf("<== [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, l[1], l[0], l[3], l[2]);
+
+            chron.acquire();
+            System.out.printf(">>> [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, l[1], l[0], l[3], l[2]);
+
+            l[3] = 0;
+            if (l[0] > 0)
+            {
+                while (l[0] >0)
+                {
+                    l[1]++;
+                    l[0]--;
+                    czyt.release();
+                }
+            }
+            else if (l[2] > 0)
+            {
+                l[3] = 1;
+                l[2]--;
+                pis.release();
+            }
+            System.out.printf("<<< [P-%d, %d] :: [%d %d %d %d]\n", nr_pisarza + 1, count + 1, l[1], l[0], l[3], l[2]);
+            chron.release();
+        }
+    }
+    public void run() {
+        try {
+            dzialaniePisarza();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+package zadanie2;
+import java.util.concurrent.Semaphore;
+
+//klasa uruchomieniowa
+public class test {
+
+    public static void main(String[] args) throws InterruptedException {
+        final int m = 4; // liczba czytelnikow
+        final int n = 2; // liczba pisarzy
+        final int liczba_powtorzen = 15;
+        //tablica obiektow typu Integer przechowujaca 4 liczby, w kolejnosci:
+        // cp, cc, pp, pc - oznaczenia z wykladow
+        int[] liczby = new int[4];
+        for (int i = 0; i < 4; i++)
+        {
+            liczby[i] = 0;
+        }
+        //tablica zawierajaca semafory, w kolejnosci, czyt, pis, chron
+        Semaphore[] mySems = new Semaphore[3];
+        mySems[0] = new Semaphore(0); // czyt
+        mySems[1] = new Semaphore(0); // pis
+        mySems[2] = new Semaphore(1); // binarny chron
+
+
+        Czytelnik[] czytelnicy = new Czytelnik[m];
+        Pisarz[] pisarze = new Pisarz[n];
+
+        for (int i = 0; i < m; i++)
+        {
+            czytelnicy[i] = new Czytelnik(i, mySems, liczba_powtorzen, liczby);
+        }
+        for (int i = 0; i < n; i++)
+        {
+            pisarze[i] = new Pisarz(i, mySems, liczba_powtorzen, liczby);
+        }
+
+        for (int i = 0; i < n; i++)
+        {
+            pisarze[i].start();
+        }
+        for (int i = 0; i < m; i++)
+        {
+            czytelnicy[i].start();
+        }
+
+        for (int i =0; i < n; i++)
+        {
+            pisarze[i].join();
+        }
+
+        for (int i = 0; i < m; i++)
+        {
+            czytelnicy[i].join();
+        }
+
+        System.out.println("Koniec urcuhomienia, program zakonczony poprawnie");
+    }
+}
