@@ -10,8 +10,8 @@ public class test3 {
         Future future1 = myExec.submit(new TaskCallableZad3());
         while(!future1.isDone())
         {
-            System.out.printf("Czy zadanie jest ukończone: %s\n", future1.isDone());
             TimeUnit.MILLISECONDS.sleep(500);
+            System.out.printf("Czy zadanie jest ukończone: %s\n", future1.isDone());
         }
         System.out.printf("Zadanie zwróciło wynik: %s\n\n", future1.get());
         myExec.shutdown();

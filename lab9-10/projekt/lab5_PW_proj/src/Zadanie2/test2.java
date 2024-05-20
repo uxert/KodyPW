@@ -15,8 +15,8 @@ public class test2 {
         TimeUnit.SECONDS.sleep(10);
         myExecutor.shutdown();
 
-
-        //sprawdza, co się stanie po zamknięciu executora
+        System.out.println("\nSprawdzenie, co się stanie po zamknięciu executora\n");
+        //sprawdza, co się stanie po zamknięciu executora - wypisuje wyjątek za pomocą printStackTrace()
         try {
             myExecutor.execute(new Task("Task after shutdown", creationTime));
         } catch (RejectedExecutionException exc)

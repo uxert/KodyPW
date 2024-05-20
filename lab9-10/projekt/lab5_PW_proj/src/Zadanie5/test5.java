@@ -1,5 +1,4 @@
 package Zadanie5;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -18,7 +17,7 @@ public class test5 {
 
         myExec.shutdown();
         myExec.awaitTermination(1, TimeUnit.SECONDS); // teoretycznie to nie musi tu być ale daje pewność,
-        // że executor się zamknął
+        // że executor się zamknął i wątki zostały zsynchronizowane
         System.out.println("Koniec");
 
     }

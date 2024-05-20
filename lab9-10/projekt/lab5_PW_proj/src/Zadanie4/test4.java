@@ -1,5 +1,4 @@
 package Zadanie4;
-
 import java.util.concurrent.*;
 
 public class test4 {

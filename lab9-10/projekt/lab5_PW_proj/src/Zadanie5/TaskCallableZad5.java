@@ -1,9 +1,8 @@
 package Zadanie5;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-public class TaskCallableZad5 implements Callable<String> {
+public class    TaskCallableZad5 implements Callable<String> {
     String taskName;
     public TaskCallableZad5(String taskName)
     {
